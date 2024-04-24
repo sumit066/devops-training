@@ -1,0 +1,275 @@
+Kubernetes Menifests  
+-----------------------------------------------------------------------------------------------------------
+1: Pod with single container
+
+kind: Pod                              
+apiVersion: v1                     
+metadata:                           
+  name: testpod                  
+spec:                                    
+  containers:                      
+    - name: c00                     
+      image: ubuntu              
+      command: ["/bin/bash", "-c", "while true; do echo Hello, This is our first pod; sleep 5 ; done"]
+  restartPolicy: Never         
+
+------------------------------------------------------------------------------------------------------------
+
+2: Pod with multi container
+
+kind: Pod
+apiVersion: v1
+metadata:
+  name: testpod3
+spec:
+  containers:
+    - name: c00
+      image: ubuntu
+      command: ["/bin/bash", "-c", "while true; do echo Hello, Multi Pods; sleep 5 ; done"]
+    - name: c01
+      image: ubuntu
+      command: ["/bin/bash", "-c", "while true; do echo Hello, Multi Pods; sleep 5 ; done"]
+       
+------------------------------------------------------------------------------------------------------------
+
+3: Replica Set 
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: my-replicaset
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-container
+        image: nginx:latest
+
+------------------------------------------------------------------------------------------------------------
+
+4: Deployment creation
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-deployment
+  labels:
+    app: myapi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-container
+        image: nginx:latest
+
+Explaination >>>>>>
+
+apiVersion: apps/v1: This specifies the API version used in the file for the Kubernetes Deployment resource.
+
+kind: Deployment: This indicates that this YAML file defines a Kubernetes Deployment resource.
+
+metadata: This section contains metadata about the deployment.
+
+labels: These are key-value pairs used to organize and categorize objects. In this case, the label "app" is set to "my-app".
+
+name: my-deployment: This is the name of the deployment.
+
+spec: This section defines the desired state for the deployment.
+
+replicas: 1: It specifies that only one instance (pod) of the application should be running.
+
+selector: This specifies how the deployment finds which pods to manage. It matches pods with the label "app: my-app".
+
+template: This section defines the pod template used for the deployment.
+
+metadata: This contains metadata for the pod template.
+
+labels: These labels are used to match the pods managed by this deployment. In this case, the label "app" is set to "my-app".
+spec: This defines the specification for the pod.
+
+containers: This specifies the containers running in the pod.
+
+image: nginx:latest: This is the Docker image used for the container.
+
+name: my-container: This is the name of the container.
+
+------------------------------------------------------------------------------------------------------------
+
+4: Namespace Creation
+
+apiVersion: v1
+kind: Namespace
+metadata:
+   name: dev
+   labels:
+     name: dev
+------------------------------------------------------------------------------------------------------------
+
+5 : Create a resource in specific namespace
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+  namespace: my-namespace
+spec:
+  containers:
+    - name: mycontainer
+      image: nginx
+      ports:
+        - containerPort: 80
+------------------------------------------------------------------------------------------------------------
+
+5 : empty dir Volume
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: container1
+        image: nginx:latest
+        volumeMounts:
+        - name: shared-volume
+          mountPath: /data
+      volumes:
+      - name: shared-volume
+        emptyDir: {}
+
+------------------------------------------------------------------------------------------------------------
+6: persistentVolume (PV) , persistentVolumeClaim (PVC) and deployment 
+
+##### PV
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: my-pv
+spec:
+  capacity:
+    storage: 2Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /mnt/data
+
+##### PVC
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+##### Deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-pvc-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-pv
+  template:
+    metadata:
+      labels:
+        app: my-pv
+    spec:
+      containers:
+      - name: container1
+        image: nginx:latest
+        volumeMounts:
+        - name: data-volume
+          mountPath: /data
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: my-pvc
+------------------------------------------------------------------------------------------------------------
+
+=================================
+KUBERNETES NETWORKING
+=================================
+
+1: container to container communication within same pod
+ 
+kind: Pod
+apiVersion: v1
+metadata:
+  name: testpod
+spec:
+  containers:
+    - name: Ade
+      image: ubuntu
+      command: ["/bin/bash", "-c", "while true; do echo Hello; sleep 5 ; done"]
+    - name: victor
+      image: httpd
+      ports:
+       - containerPort: 80
+
+- Go inside c00 container and install curl 
+- apt update && apt install curl 
+- curl localhost:80 >>>> It Works 
+------------------------------------------------------------------------------------------------------------
+2: container to container communication in different pod
+
+kind: Pod
+apiVersion: v1
+metadata:
+  name: testpod1
+spec:
+  containers:
+    - name: c00
+      image: ubuntu
+      ports:
+       - containerPort: 80
+##########################
+
+kind: Pod
+apiVersion: v1
+metadata:
+  name: testpod2
+spec:
+  containers:
+    - name: c01
+      image: httpd
+      ports:
+       - containerPort: 80
+
+- Go inside c00 container  
+- test it by doing curl ip:80
+
+
