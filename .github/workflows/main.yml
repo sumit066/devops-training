@@ -1,0 +1,32 @@
+name: Staged Workflow Deployment 
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: My test environment
+        required: true
+        type: dev
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "🎉 The job was triggered by event: ${{ github.event_name }}"
+          echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ."
+
+      - uses: actions/checkout@v3.3.0
+
+      - name: List files in the repository
+        run: |
+          echo "The repository ${{ github.repository }} contains the following files:"
+          tree
+
+  Test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    needs: Build
+    environment: Test
+    steps:
+      - run: echo "🧪 Testing..."
+        
